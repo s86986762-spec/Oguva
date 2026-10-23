@@ -23,9 +23,9 @@ RULES
 // ---- simple per-visitor rate limiting (uses a KV namespace bound as RATE_KV) ----
 // Windows: [key, milliseconds, max messages]. Tune freely.
 const LIMITS = [
-  ['s10', 10 * 1000, 8],             // 8 messages / 10 seconds
-  ['h1',  60 * 60 * 1000, 40],       // 40 messages / hour
-  ['d1',  24 * 60 * 60 * 1000, 150], // 150 messages / day
+  ['s10', 10 * 1000, 8],            // 8 messages / 10 seconds
+  ['h1',  60 * 60 * 1000, 15],      // 15 messages / hour
+  ['d1',  24 * 60 * 60 * 1000, 30], // 30 messages / day
 ];
 async function checkRateLimit(env, ip) {
   const KV = env.RATE_KV;
