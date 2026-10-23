@@ -124,9 +124,9 @@ async function checkWebsite(url) {
     try { parsed = new URL(u); } catch (e) { return 'That does not look like a valid website URL.'; }
     if (!/^https?:$/.test(parsed.protocol)) return 'Only http and https links are supported.';
     const host = parsed.hostname.toLowerCase();
-    if (host === 'localhost' || host.endsWith('.local') || host.endsWith('.internal') || /^\d+\.\d+\.\d+\.\d+$/.test(host) || host.includes(':')) {
-      return 'That address is not supported.';
-    }
+    const blockedHost = host === 'localhost' || host.endsWith('.localhost') || host.endsWith('.local') || host.endsWith('.internal') || host.endsWith('.lan') || host.endsWith('.home.arpa') || host.endsWith('.intranet') || host.endsWith('.corp') || host.includes(':') || /^[0-9.]+$/.test(host);
+    if (blockedHost) return 'That address is not supported.';
+    if (parsed.port && parsed.port !== '80' && parsed.port !== '443') return 'Only standard web links (ports 80 and 443) are supported.';
     const res = await fetch(parsed.toString(), { redirect: 'follow', headers: { 'User-Agent': 'OguvaAudit/1.0 (+https://oguva.com)' } });
     const ct = (res.headers.get('content-type') || '').toLowerCase();
     if (!ct.includes('html')) {
@@ -235,6 +235,23 @@ async function runTool(name, input, env, ip) {
   return 'Unknown tool.';
 }
 
+async function verifyTurnstile(env, request, token) {
+  const secret = env.TURNSTILE_SECRET_KEY;
+  if (!secret) return true;               // not configured -> skip
+  if (!token) return false;
+  try {
+    const form = new FormData();
+    form.append('secret', secret);
+    form.append('response', String(token).slice(0, 4096));
+    const ip = request.headers.get('CF-Connecting-IP');
+    if (ip) form.append('remoteip', ip);
+    const r = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', { method: 'POST', body: form });
+    if (!r.ok) return true;               // Turnstile outage -> fail open
+    const d = await r.json();
+    return !!d.success;
+  } catch (e) { return true; }            // network error -> fail open
+}
+
 export async function onRequestPost({ request, env }) {
   const json = (o, s = 200) => new Response(JSON.stringify(o), { status: s, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
   try {
@@ -248,6 +265,9 @@ export async function onRequestPost({ request, env }) {
     if (!env.ANTHROPIC_API_KEY) return json({ error: 'not configured' }, 500);
 
     const body = await request.json();
+    if (!(await verifyTurnstile(env, request, body.turnstileToken))) {
+      return json({ error: 'captcha', message: 'Please refresh the page and try again.' }, 403);
+    }
     let messages = (Array.isArray(body.messages) ? body.messages : []).slice(-24)
       .filter(x => x && (x.role === 'user' || x.role === 'assistant') && typeof x.content === 'string')
       .map(x => ({ role: x.role, content: x.content.slice(0, 2000) }));
