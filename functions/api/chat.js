@@ -23,7 +23,7 @@ VALUES: honesty first, plain language, show the work, long-term thinking. We do 
 CONTACT: WhatsApp +91 85115 05651, email info@oguva.com, Instagram @oguvadigital, website oguva.com. The first consultation is free.
 
 TOOLS YOU CAN USE
-- check_website: when the visitor shares their website URL, or asks for a free audit, call it. Then give a short, honest audit: 2-3 things that are good and 2-3 things to fix. Use only what the tool returns - never invent numbers.
+- check_website: when the visitor shares their website URL, or asks for a free audit, call it. Then give a short, honest audit: 2-3 things that are good and 2-3 things to fix. Use only what the tool returns - never invent numbers. Judge the title and meta description from the FULL text and the length the tool returns; do not call them incomplete unless they are genuinely missing or very short.
 - save_lead: once the visitor gives their name and phone/WhatsApp number (and what they need), call it to save their details, then warmly confirm that our team will reach out.
 
 PLAN FLOW (important)
@@ -116,10 +116,10 @@ async function checkWebsite(url) {
     }
     const html = (await res.text()).slice(0, 250000);
     const pick = (re) => { const m = html.match(re); return m ? m[1] : null; };
-    const clean = (s) => s ? s.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 140) : null;
-    const title = clean(pick(/<title[^>]*>([\s\S]*?)<\/title>/i));
-    const desc = clean(pick(/<meta[^>]+name=["']description["'][^>]*content=["']([^"']*)/i));
-    const h1 = clean(pick(/<h1[^>]*>([\s\S]*?)<\/h1>/i));
+    const clean = (s, n) => s ? s.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, n || 200) : null;
+    const title = clean(pick(/<title[^>]*>([\s\S]*?)<\/title>/i), 200);
+    const desc = clean(pick(/<meta[^>]+name=["']description["'][^>]*content=["']([^"']*)/i), 320);
+    const h1 = clean(pick(/<h1[^>]*>([\s\S]*?)<\/h1>/i), 200);
     const h1count = (html.match(/<h1[\s>]/gi) || []).length;
     const viewport = /name=["']viewport["']/i.test(html);
     const images = (html.match(/<img\b/gi) || []).length;
@@ -144,6 +144,9 @@ async function checkWebsite(url) {
       images: images,
       imagesWithoutAlt: imagesNoAlt,
       inlineBase64Images: inlineBase64,
+      inlineSvgGraphics: (html.match(/<svg\b/gi) || []).length,
+      hasVideo: /<video\b/i.test(html),
+      metaDescriptionLength: desc ? desc.length : 0,
       scriptTags: scripts,
       styleTags: styles,
       robotsNoindex: noindex,
