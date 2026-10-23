@@ -29,3 +29,6 @@ Rate limits: 8 msgs / 10s, 15 / hour, 30 / day per visitor.
 ## Cloudflare Pages settings
 - Build command: (none) · Build output directory: `/`
 - Production branch: `main`
+
+## Deploy note
+After adding or changing a secret or a binding, trigger a new deployment (push a commit, or Deployments > Retry deployment) for it to take effect.
