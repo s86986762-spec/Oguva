@@ -370,6 +370,44 @@ h1.display{font-size:clamp(36px,5vw,60px);line-height:1.05;letter-spacing:-.036e
                         <button type="submit" class="btn btn-primary">Send on WhatsApp</button>
                         <p class="note">On submit, these details open directly in our WhatsApp chat.</p>
                     </form>
+
+                    <div id="pay-sec" style="margin-top:26px;padding-top:24px;border-top:1px solid var(--line)">
+                        <h3 style="margin:0 0 6px;font-size:19px">Pay online</h3>
+                        <p style="color:var(--muted);font-size:14.5px;margin:0 0 14px">Pay your project advance or retainer securely - UPI, card or netbanking. Secured by Razorpay.</p>
+                        <div id="pay-btns"></div>
+                        <p id="pay-msg" style="font-size:13.5px;color:var(--muted);margin:10px 0 0"></p>
+                    </div>
+                    <script>
+                    (function(){
+                      function msg(t){var m=document.getElementById('pay-msg');if(m)m.textContent=t;}
+                      function loadRzp(cb){if(window.Razorpay)return cb();if(document.getElementById('rzp-js'))return;var s=document.createElement('script');s.id='rzp-js';s.src='https://checkout.razorpay.com/v1/checkout.js';s.onload=cb;s.onerror=function(){msg('Payment is not available right now.');};document.head.appendChild(s);}
+                      function inr(p){return 'Rs '+(p/100).toLocaleString('en-IN');}
+                      fetch('/api/pay',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'plans'})})
+                        .then(function(r){return r.json()})
+                        .then(function(d){if(!d||!d.plans)return;var box=document.getElementById('pay-btns');
+                          d.plans.forEach(function(p){var b=document.createElement('button');b.type='button';b.className='btn btn-primary';b.style.margin='0 8px 10px 0';b.textContent='Pay '+inr(p.amount)+' - '+p.label;b.onclick=function(){start(p.id);};box.appendChild(b);});})
+                        .catch(function(){});
+                      function start(plan){
+                        msg('Opening secure payment...');
+                        loadRzp(function(){
+                          fetch('/api/pay',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'create',plan:plan})})
+                            .then(function(r){return r.json()})
+                            .then(function(o){
+                              if(!o||!o.order_id){msg('Payment is not available right now.');return;}
+                              var rzp=new Razorpay({key:o.key_id,amount:o.amount,currency:o.currency,name:o.name,description:o.label,order_id:o.order_id,theme:{color:'#3730A3'},
+                                handler:function(resp){
+                                  msg('Verifying payment...');
+                                  fetch('/api/pay',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({action:'verify'},resp))})
+                                    .then(function(r){return r.json()})
+                                    .then(function(v){msg(v&&v.verified?'Payment received - thank you! Our team will email your receipt.':'We could not verify the payment. Please contact us.');})
+                                    .catch(function(){msg('We could not verify the payment. Please contact us.');});
+                                }});
+                              rzp.open();
+                            }).catch(function(){msg('Payment is not available right now.');});
+                        });
+                      }
+                    })();
+                    </script>
                 </div>
             </div>
         </section>
