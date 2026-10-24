@@ -571,6 +571,7 @@ function waPlan(){var L=[];for(var i=0;i<hist.length;i++){L.push((hist[i].role==
             text = 'Hello Oguva!\n\nName: ' + name + '\nMobile: ' + phone;
         if(email){ text += '\nEmail: ' + email; }
         text += '\nMessage: ' + msg;
+        try { navigator.sendBeacon('/api/lead', new Blob([JSON.stringify({ name: name, phone: phone, email: email, need: msg, source: 'contact-form' })], { type: 'application/json' })); } catch (err) {}
         window.open('https://wa.me/918511505651?text=' + encodeURIComponent(text), '_blank');
         return false;
       };
