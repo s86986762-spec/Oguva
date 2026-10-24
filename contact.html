@@ -380,20 +380,25 @@ h1.display{font-size:clamp(36px,5vw,60px);line-height:1.05;letter-spacing:-.036e
                     <script>
                     (function(){
                       function msg(t){var m=document.getElementById('pay-msg');if(m)m.textContent=t;}
-                      function loadRzp(cb){if(window.Razorpay)return cb();if(document.getElementById('rzp-js'))return;var s=document.createElement('script');s.id='rzp-js';s.src='https://checkout.razorpay.com/v1/checkout.js';s.onload=cb;s.onerror=function(){msg('Payment is not available right now.');};document.head.appendChild(s);}
+                      function why(o,s){if(o&&o.error)return o.error;if(s)return 'HTTP '+s;return 'unavailable';}
+                      function loadRzp(cb){
+                        if(window.Razorpay)return cb();
+                        var ex=document.getElementById('rzp-js');
+                        if(ex){if(ex.getAttribute('data-ready')==='1')return cb();ex.addEventListener('load',cb);ex.addEventListener('error',function(){msg('Could not open the payment window. Please refresh.');});return;}
+                        var s=document.createElement('script');s.id='rzp-js';s.src='https://checkout.razorpay.com/v1/checkout.js';
+                        s.onload=function(){s.setAttribute('data-ready','1');cb();};
+                        s.onerror=function(){msg('Could not open the payment window. Please refresh.');};
+                        document.head.appendChild(s);
+                      }
                       function inr(p){return 'Rs '+(p/100).toLocaleString('en-IN');}
-                      fetch('/api/pay',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'plans'})})
-                        .then(function(r){return r.json()})
-                        .then(function(d){if(!d||!d.plans)return;var box=document.getElementById('pay-btns');
-                          d.plans.forEach(function(p){var b=document.createElement('button');b.type='button';b.className='btn btn-primary';b.style.margin='0 8px 10px 0';b.textContent='Pay '+inr(p.amount)+' - '+p.label;b.onclick=function(){start(p.id);};box.appendChild(b);});})
-                        .catch(function(){});
                       function start(plan){
                         msg('Opening secure payment...');
                         loadRzp(function(){
                           fetch('/api/pay',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'create',plan:plan})})
-                            .then(function(r){return r.json()})
-                            .then(function(o){
-                              if(!o||!o.order_id){msg('Payment is not available right now.');return;}
+                            .then(function(r){return r.json().then(function(j){return {s:r.status,j:j};});})
+                            .then(function(res){
+                              var o=res.j;
+                              if(!o||!o.order_id){msg('Payment could not start ('+why(o,res.s)+'). Please contact us on WhatsApp or email.');return;}
                               var rzp=new Razorpay({key:o.key_id,amount:o.amount,currency:o.currency,name:o.name,description:o.label,order_id:o.order_id,theme:{color:'#3730A3'},
                                 handler:function(resp){
                                   msg('Verifying payment...');
@@ -403,9 +408,19 @@ h1.display{font-size:clamp(36px,5vw,60px);line-height:1.05;letter-spacing:-.036e
                                     .catch(function(){msg('We could not verify the payment. Please contact us.');});
                                 }});
                               rzp.open();
-                            }).catch(function(){msg('Payment is not available right now.');});
+                            }).catch(function(){msg('Payment could not start. Please contact us.');});
                         });
                       }
+                      fetch('/api/pay',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'plans'})})
+                        .then(function(r){return r.json().then(function(j){return {s:r.status,j:j};});})
+                        .then(function(res){
+                          var d=res.j;
+                          if(!d||!d.plans){msg('Payment is not available ('+why(d,res.s)+'). Please contact us.');return;}
+                          var box=document.getElementById('pay-btns');box.innerHTML='';
+                          d.plans.forEach(function(p){var b=document.createElement('button');b.type='button';b.className='btn btn-primary';b.style.margin='0 8px 10px 0';b.textContent='Pay '+inr(p.amount)+' - '+p.label;b.onclick=function(){start(p.id);};box.appendChild(b);});
+                          msg('');
+                        })
+                        .catch(function(){msg('Payment is not available (network). Please contact us.');});
                     })();
                     </script>
                 </div>
