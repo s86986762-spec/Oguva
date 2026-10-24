@@ -1,3 +1,6 @@
+/sw.js
+  Cache-Control: no-cache
+
 # Cached, immutable assets
 /styles.css
   Cache-Control: public, max-age=604800
