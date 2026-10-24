@@ -250,23 +250,6 @@ async function runTool(name, input, env, ip) {
   return 'Unknown tool.';
 }
 
-async function verifyTurnstile(env, request, token) {
-  const secret = env.TURNSTILE_SECRET_KEY;
-  if (!secret) return true;               // not configured -> skip
-  if (!token) return false;
-  try {
-    const form = new FormData();
-    form.append('secret', secret);
-    form.append('response', String(token).slice(0, 4096));
-    const ip = request.headers.get('CF-Connecting-IP');
-    if (ip) form.append('remoteip', ip);
-    const r = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', { method: 'POST', body: form });
-    if (!r.ok) return true;               // Turnstile outage -> fail open
-    const d = await r.json();
-    return !!d.success;
-  } catch (e) { return true; }            // network error -> fail open
-}
-
 export async function onRequestPost({ request, env }) {
   const json = (o, s = 200) => new Response(JSON.stringify(o), { status: s, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
   try {
@@ -280,9 +263,6 @@ export async function onRequestPost({ request, env }) {
     if (!env.ANTHROPIC_API_KEY) return json({ error: 'not configured' }, 500);
 
     const body = await request.json();
-    if (!(await verifyTurnstile(env, request, body.turnstileToken))) {
-      return json({ error: 'captcha', message: 'Please refresh the page and try again.' }, 403);
-    }
     let messages = (Array.isArray(body.messages) ? body.messages : []).slice(-24)
       .filter(x => x && (x.role === 'user' || x.role === 'assistant') && typeof x.content === 'string')
       .map(x => ({ role: x.role, content: x.content.slice(0, 2000) }));
