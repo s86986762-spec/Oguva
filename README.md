@@ -1,34 +1,34 @@
-# Oguva Digital Marketing — website
+# Oguva Digital Marketing - website
 
 Static website for **oguva.com**, deployed on Cloudflare Pages (auto-deploys from this repo).
 
 ## Pages
-- `index.html` — home
+- `index.html` - home
 - `about.html`, `services.html`, `contact.html`, `faq.html`
 
 ## Assets
-- `hero.webp` / `hero.jpg` — home hero image
-- `og-image.png` — social share image (1200x630)
-- `oguva-video.mp4` / `oguva-video-poster.jpg` — home video
+- `hero.webp` / `hero.jpg`, `og-image.png`, favicon
+- `oguva-ai-mascot.svg` - the AI assistant mascot icon
 
 ## SEO
-- `robots.txt`, `sitemap.xml`
-- Google Analytics tag in every page (G-5T7Y8QN2Y7)
+- `robots.txt`, `sitemap.xml`, Google Analytics in every page
 
 ## Backend (Cloudflare Pages Functions)
-`functions/api/chat.js` — the website AI assistant, `POST /api/chat`
+- `functions/api/chat.js` - the website AI assistant (`POST /api/chat`)
+- `functions/api/lead.js` - contact-form leads (`POST /api/lead`)
+- `functions/api/pay.js`  - Razorpay checkout (`POST /api/pay`)
 
-Secrets and bindings required (Cloudflare > project > Settings):
-- `ANTHROPIC_API_KEY` (secret) — required for the chat
-- `GOOGLE_MAPS_API_KEY` (secret) — for the Google Maps lookup tool
-- `RATE_KV` (KV namespace binding) — per-visitor rate limiting + saved leads
-
-Tools the assistant can use: `check_website`, `check_google_maps`, `save_lead`.
-Rate limits: 8 msgs / 10s, 15 / hour, 30 / day per visitor.
+### Secrets / bindings (Cloudflare > project > Settings)
+- `ANTHROPIC_API_KEY`   (secret) - the AI chat
+- `GOOGLE_MAPS_API_KEY` (secret) - the Maps lookup tool
+- `LEAD_WEBHOOK_URL`    (secret) - forwards leads to Zoho Flow (automation)
+- `RAZORPAY_KEY_ID`     (secret) - Razorpay key id
+- `RAZORPAY_KEY_SECRET` (secret) - Razorpay key secret
+- `RATE_KV`             (KV binding) - rate limiting + saved leads
 
 ## Cloudflare Pages settings
 - Build command: (none) · Build output directory: `/`
 - Production branch: `main`
 
 ## Deploy note
-After adding or changing a secret or a binding, trigger a new deployment (push a commit, or Deployments > Retry deployment) for it to take effect.
+After adding or changing a secret or binding, trigger a new deployment (push a commit, or Deployments > Retry).
