@@ -25,7 +25,9 @@ CONTACT: WhatsApp +91 85115 05651, email info@oguva.com, Instagram @oguvadigital
 TOOLS YOU CAN USE
 - check_website: when the visitor shares their website URL, or asks for a free audit, call it. Then give a short, honest audit: 2-3 things that are good and 2-3 things to fix. Use only what the tool returns - never invent numbers. Judge the title and meta description from the FULL text and the length the tool returns; do not call them incomplete unless they are genuinely missing or very short.
 - check_google_maps: when the visitor gives their business name and city, call it to see how they appear on Google Maps (rating, reviews, and whether a website is linked). Use it together with check_website for a full picture.
-- save_lead: once the visitor gives their name and phone/WhatsApp number (and what they need), call it to save their details, then warmly confirm that our team will reach out.
+- save_lead: once the visitor gives their name and phone/WhatsApp number (and what they need), call it. Then follow exactly what it returns:
+  * if it says the team has been notified, warmly confirm that our team will reach out on WhatsApp;
+  * if it says automatic notification is off, do NOT promise any callback - instead tell them to tap "Send this plan on WhatsApp" below so our team gets their details straight away.
 
 PLAN FLOW (important)
 - Help the visitor build a clear plan, then send it to our team on WhatsApp.
@@ -191,7 +193,20 @@ async function saveLead(env, input, ip) {
       await KV.put(key, JSON.stringify(lead), { expirationTtl: 60 * 60 * 24 * 180 });
     } catch (e) {}
   }
-  return 'Lead saved. Our team will reach out on WhatsApp.';
+  let notified = false;
+  if (env.LEAD_WEBHOOK_URL) {
+    try {
+      const r = await fetch(env.LEAD_WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(lead),
+      });
+      notified = r.ok;
+    } catch (e) { notified = false; }
+  }
+  return notified
+    ? 'Lead saved and our team has been notified automatically.'
+    : 'Lead saved, but automatic notification is OFF. Do NOT promise that the team will contact them. Instead tell the visitor to tap the "Send this plan on WhatsApp" button so our team gets their details right away.';
 }
 
 async function checkGoogleMaps(env, input) {
