@@ -8,8 +8,7 @@
 
 // ---- payment options (EDIT THESE — amounts are in paise: 100000 = Rs 1000) ----
 const PLANS = {
-  advance:  { label: 'Project advance',  amount: 500000  },   // Rs 5,000
-  retainer: { label: 'Monthly retainer', amount: 2500000 },   // Rs 25,000
+  package: { label: 'Website + SEO package', amount: 2500000 },   // Rs 25,000 - fixed (EDIT THIS)
 };
 
 async function hmacHex(secret, msg) {
