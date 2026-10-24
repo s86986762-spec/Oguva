@@ -325,6 +325,36 @@ async function runTool(name, input, env, ip) {
   return 'Unknown tool.';
 }
 
+/* ---- model providers (OpenAI chat-completions shape) ---- */
+const OPENAI_TOOLS = TOOLS.map(function (t) {
+  return { type: 'function', function: { name: t.name, description: t.description, parameters: t.input_schema } };
+});
+
+// Free tier: Cloudflare Workers AI (needs an 'AI' binding). Resets daily.
+async function callWorkersAI(env, msgs, tools) {
+  if (!env.AI) throw new Error('no-ai-binding');
+  const out = await env.AI.run(env.AI_MODEL || '@cf/openai/gpt-oss-120b', { messages: msgs, tools: tools, max_tokens: 700 });
+  if (out && out.choices && out.choices[0] && out.choices[0].message) return out.choices[0].message;
+  if (out && typeof out.response === 'string') return { role: 'assistant', content: out.response };
+  if (out && out.result && typeof out.result.response === 'string') return { role: 'assistant', content: out.result.response };
+  throw new Error('bad-shape');
+}
+
+// Paid fallback: xAI (Grok), OpenAI-compatible. Key stays in Cloudflare secrets.
+async function callXAI(env, msgs, tools) {
+  if (!env.XAI_API_KEY) throw new Error('no-xai-key');
+  const r = await fetch('https://api.x.ai/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + env.XAI_API_KEY },
+    body: JSON.stringify({ model: env.XAI_MODEL || 'grok-4.3', messages: msgs, tools: tools, max_tokens: 700 }),
+  });
+  if (!r.ok) throw new Error('xai-' + r.status);
+  const d = await r.json();
+  const m = d && d.choices && d.choices[0] && d.choices[0].message;
+  if (!m) throw new Error('bad-shape');
+  return m;
+}
+
 export async function onRequestPost({ request, env }) {
   const json = (o, s = 200) => new Response(JSON.stringify(o), { status: s, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
   try {
@@ -335,7 +365,7 @@ export async function onRequestPost({ request, env }) {
     const rl = await checkRateLimit(env, ip);
     if (!rl.ok) return json({ error: 'rate_limited' }, 429);
 
-    if (!env.ANTHROPIC_API_KEY) return json({ error: 'not configured' }, 500);
+    if (!env.AI && !env.XAI_API_KEY) return json({ error: 'not configured' }, 500);
 
     const body = await request.json();
     let messages = (Array.isArray(body.messages) ? body.messages : []).slice(-24)
@@ -344,34 +374,32 @@ export async function onRequestPost({ request, env }) {
     while (messages.length && messages[0].role !== 'user') messages.shift();
     if (!messages.length || messages[messages.length - 1].role !== 'user') return json({ error: 'bad request' }, 400);
 
+    let msgs = [{ role: 'system', content: SYSTEM }].concat(messages);
+    const chain = [
+      { name: 'workers-ai', run: callWorkersAI },   // FREE first
+      { name: 'xai', run: callXAI },                // paid fallback
+    ];
     for (let turn = 0; turn < 3; turn++) {
-      const r = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-        body: JSON.stringify({ model: 'claude-sonnet-5-5', max_tokens: 700, system: SYSTEM, messages: messages, tools: TOOLS }),
-      });
-      if (!r.ok) return json({ error: 'upstream' }, 502);
-      const d = await r.json();
-      const blocks = Array.isArray(d.content) ? d.content : [];
+      let msg = null;
+      for (const p of chain) {
+        try { msg = await p.run(env, msgs, OPENAI_TOOLS); break; } catch (e) { msg = null; }
+      }
+      if (!msg) return json({ reply: 'Sorry, I could not finish that just now. Please email us at info@oguva.com.' });
 
-      if (d.stop_reason === 'tool_use') {
-        const keep = blocks.filter(b => b.type === 'text' || b.type === 'tool_use');
-        messages = messages.concat([{ role: 'assistant', content: keep }]);
-        const results = [];
-        for (const b of keep) {
-          if (b.type === 'tool_use') {
-            const out = await runTool(b.name, b.input || {}, env, ip);
-            results.push({ type: 'tool_result', tool_use_id: b.id, content: out });
-          }
+      const calls = Array.isArray(msg.tool_calls) ? msg.tool_calls : [];
+      if (calls.length) {
+        msgs.push({ role: 'assistant', content: msg.content || '', tool_calls: calls });
+        for (const c of calls) {
+          let args = {};
+          try { args = JSON.parse((c.function && c.function.arguments) || '{}'); } catch (e) { args = {}; }
+          const out = await runTool(c.function && c.function.name, args, env, ip);
+          msgs.push({ role: 'tool', tool_call_id: c.id, content: String(out).slice(0, 6000) });
         }
-        messages = messages.concat([{ role: 'user', content: results }]);
         continue;
       }
-
-      const reply = blocks.filter(b => b.type === 'text').map(b => b.text).join('').trim();
+      const reply = String(msg.content || '').trim();
       return json({ reply: reply || 'Please email us at info@oguva.com.' });
     }
-    return json({ reply: 'Sorry, I could not finish that just now. Please email us at info@oguva.com.' });
   } catch (e) {
     return json({ error: 'error' }, 500);
   }
