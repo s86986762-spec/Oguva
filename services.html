@@ -472,7 +472,7 @@ h1.display{font-size:clamp(36px,5vw,60px);line-height:1.05;letter-spacing:-.036e
 function add(t,c){var d=document.createElement('div');d.className='ai-m '+c;d.textContent=t;log.appendChild(d);log.scrollTop=log.scrollHeight;return d}
 function open(o){p.classList.toggle('open',o);b.setAttribute('aria-expanded',o);if(o){if(!log.children.length){add("Hi! I'm Oguva's AI assistant. Ask me about our services, how we work, or how to get started. Aap Hindi mein bhi pooch sakte ho.",'bot');var q=document.createElement('div');q.className='ai-q';['What services do you offer?','How long do results take?','How does pricing work?'].forEach(function(t){var x=document.createElement('button');x.type='button';x.textContent=t;x.onclick=function(){q.remove();send(t)};q.appendChild(x)});log.appendChild(q)}inp.focus();tsBoot()}}
 b.onclick=function(){open(!p.classList.contains('open'))};document.getElementById('ai-x').onclick=function(){open(false)};
-var TS_KEY='';
+var TS_KEY='0x4AAAAAAFaJLuJlQz4J6LJ7';
 var tsId=null,tsTok=null;
 function tsBoot(){if(!TS_KEY||tsId!==null)return;if(window.turnstile){tsRender()}else if(!document.getElementById('ts-api')){var s=document.createElement('script');s.id='ts-api';s.src='https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';s.async=true;s.defer=true;s.onload=function(){tsRender()};document.head.appendChild(s)}}
 function tsRender(){if(!TS_KEY||!window.turnstile||tsId!==null)return;try{tsId=turnstile.render('#ts-widget',{sitekey:TS_KEY,execution:'execute',appearance:'interaction-only',callback:function(t){tsTok=t}})}catch(e){}}
