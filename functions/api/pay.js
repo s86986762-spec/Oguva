@@ -8,7 +8,7 @@
 
 // ---- payment options (EDIT THESE — amounts are in paise: 100000 = Rs 1000) ----
 const PLANS = {
-  package: { label: 'Website + SEO package', amount: 2500000 },   // Rs 25,000 - fixed (EDIT THIS)
+  package: { label: 'Website + SEO package', amount: 200 },   // Rs 2 - TEST AMOUNT (change later)
 };
 
 async function hmacHex(secret, msg) {
