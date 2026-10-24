@@ -16,19 +16,19 @@ PRICING: shaped to budget, no fixed package. NEVER state a price or budget - our
 VALUES: honesty first, plain language, no invented case studies.
 CONTACT: WhatsApp +91 85115 05651, info@oguva.com, Instagram @oguvadigital. First consultation free.
 
-SEO - WHAT IT DOES (when a client asks what SEO will give them, answer with this, in short lines)
-- Found: you appear when people search what you sell - on Google and in AI tools.
-- Enquiries: people who are already looking to buy, not random clicks.
-- Local: you show up on Google Maps and "near me" searches.
-- Trust: ranking well earns trust before they call.
-- Compounding: ads stop when you stop paying; SEO keeps working.
-- How we do it: fix the technical basics (speed, mobile, indexing), target the right keywords, publish useful content, build the Google Business Profile and reviews, earn links.
-- Measured by: rankings, calls, form fills, WhatsApp messages, cost per enquiry.
-- Honest: real movement takes about 2-4 months and varies by market and competition. No guarantees.
+SERVICES (for full details on any service, call get_service_info first, then answer in short lines)
+- SEO & AEO: found on Google and quoted by AI tools.
+- Google Ads: appear instantly on search; pay per click.
+- Meta Ads: reach people on Instagram and Facebook.
+- Social Media: build trust and stay in front of your audience.
+- Content Marketing: useful content that brings and converts traffic.
+- Website Design: fast, mobile-first sites built to convert.
+- Local SEO: show up on Google Maps and "near me" searches.
 
 TOOLS
 - check_website: when the visitor shares a URL or asks for a free audit, call it, then give 2-3 things that are good and 2-3 to fix. Use only what it returns; never invent numbers. Judge the title and meta description from the full text and its length - do not call them incomplete unless they are truly missing or very short.
 - check_google_maps: when the visitor gives a business name and city, call it to see their Google Maps presence (rating, reviews, website linked).
+- get_service_info: when the visitor asks what a service will do for them (SEO, Google Ads, Meta Ads, Social Media, Content Marketing, Website Design, Local SEO), call it with the service name, then answer in short lines using only what it returns.
 - save_lead: once you have their name and phone/WhatsApp number and what they need, call it, then follow exactly what it returns: if the team was notified, confirm they will reach out on WhatsApp; if not, do not promise a callback - tell them to tap "Send this plan on WhatsApp" below.
 
 PLAN FLOW
@@ -95,6 +95,15 @@ const TOOLS = [
         city: { type: 'string', description: 'City or area, if known' },
       },
       required: ['name'],
+    },
+  },
+  {
+    name: 'get_service_info',
+    description: 'Return what a service delivers, how we do it, how we measure it, and honest expectations. Call this when the visitor asks what a service will do for them.',
+    input_schema: {
+      type: 'object',
+      properties: { service: { type: 'string', description: 'e.g. SEO, Google Ads, Meta Ads, Social Media, Content Marketing, Website Design, Local SEO' } },
+      required: ['service'],
     },
   },
   {
@@ -239,8 +248,77 @@ async function checkGoogleMaps(env, input) {
   }
 }
 
+const SERVICE_INFO = {
+  seo: `SEO & AEO - WHAT IT GIVES
+- Found when people search what you sell, on Google and in AI tools (ChatGPT, Gemini).
+- People who are already looking to buy, not random clicks.
+- Local visibility on Google Maps and "near me".
+- Trust: ranking well earns trust before they call.
+- Compounding: ads stop when you stop paying; SEO keeps working.
+HOW WE DO IT: fix the technical basics (speed, mobile, indexing); target the right keywords; publish useful content; build the Google Business Profile and reviews; earn links.
+MEASURED BY: rankings, calls, form fills, WhatsApp messages, cost per enquiry.
+HONEST: real movement takes about 2-4 months and varies by market and competition. No guarantees.`,
+  googleads: `Google Ads - WHAT IT GIVES
+- Instant visibility when someone searches for what you sell.
+- Enquiries from day one - you do not wait months.
+- Full control of budget, keywords and timing.
+HOW WE DO IT: keyword and competitor research; tight ad groups and copy; landing pages built to convert; conversion tracking; daily optimisation.
+MEASURED BY: clicks, cost per lead, conversion rate, return on ad spend.
+HONEST: first results in about 7-15 days. Cost per lead depends on your industry and competition. No guarantees.`,
+  metaads: `Meta Ads (Instagram & Facebook) - WHAT IT GIVES
+- Reach people by interest, location and behaviour - even before they search.
+- Build demand and stay in front of your audience.
+- Retarget people who visited but did not buy.
+HOW WE DO IT: audience research; scroll-stopping creative; clear offers; retargeting; pixel and conversion tracking.
+MEASURED BY: reach, cost per result, leads, return.
+HONEST: creative and offer matter most; results vary. No guarantees.`,
+  social: `Social Media Marketing - WHAT IT GIVES
+- A steady, trusted presence where your customers already spend time.
+- A place to send people from ads and search.
+- More direct messages and enquiries.
+HOW WE DO IT: content plan; posts and reels; engagement; profile optimisation; a consistent voice.
+MEASURED BY: reach, engagement, profile visits, messages.
+HONEST: it compounds over time; it is not instant. No guarantees.`,
+  content: `Content Marketing - WHAT IT GIVES
+- Content that ranks, answers real questions and brings traffic over time.
+- Warmer visitors who already trust you.
+- Assets you own, not rented ads.
+HOW WE DO IT: topic and keyword research; blogs and service pages; clear writing; internal links; regular updates.
+MEASURED BY: traffic, time on page, leads from content.
+HONEST: content compounds; expect months, not days. No guarantees.`,
+  website: `Website Design - WHAT IT GIVES
+- A fast, mobile-first site that turns visitors into enquiries.
+- Clear structure and messaging, so people know what you do in seconds.
+- A solid base for SEO and ads.
+HOW WE DO IT: structure and copy; design; build; speed; SEO basics; forms and WhatsApp so enquiries reach you.
+MEASURED BY: speed, enquiries, bounce rate.
+HONEST: design alone does not bring traffic - it converts the traffic you get. No guarantees.`,
+  local: `Local SEO - WHAT IT GIVES
+- You show up on Google Maps and "near me" searches.
+- More calls and walk-ins from your own area.
+- Reviews and photos that build trust before they visit.
+HOW WE DO IT: Google Business Profile setup and optimisation; the right categories; photos; a review flow; local pages; citations.
+MEASURED BY: map views, calls, direction requests.
+HONEST: local results can move in weeks, but vary by area and competition. No guarantees.`,
+};
+
+function getServiceInfo(name) {
+  const k = String(name || '').toLowerCase();
+  let key = null;
+  if (/local/.test(k)) key = 'local';
+  else if (/google ad|ppc|sem\b|search ad/.test(k)) key = 'googleads';
+  else if (/meta|facebook|instagram|fb ad/.test(k)) key = 'metaads';
+  else if (/social/.test(k)) key = 'social';
+  else if (/content/.test(k)) key = 'content';
+  else if (/website|web design|web site|site design|web develop/.test(k)) key = 'website';
+  else if (/seo|aeo|search engine|answer engine/.test(k)) key = 'seo';
+  if (!key) return 'No details found for "' + name + '". Our services: SEO & AEO, Google Ads, Meta Ads, Social Media, Content Marketing, Website Design, Local SEO.';
+  return SERVICE_INFO[key];
+}
+
 async function runTool(name, input, env, ip) {
   if (name === 'check_website') return await checkWebsite(input.url);
+  if (name === 'get_service_info') return getServiceInfo(input.service);
   if (name === 'check_google_maps') return await checkGoogleMaps(env, input);
   if (name === 'save_lead') return await saveLead(env, input, ip);
   return 'Unknown tool.';
