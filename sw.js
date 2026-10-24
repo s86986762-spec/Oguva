@@ -1,5 +1,5 @@
 /* Oguva service worker - makes repeat visits instant (app-like) */
-var CACHE = 'oguva-v1';
+var CACHE = 'oguva-v2';
 var CORE = ['/', '/pricing', '/services', '/about', '/faq', '/contact', '/styles.css'];
 
 self.addEventListener('install', function (e) {
