@@ -1,0 +1,3 @@
+# Serve the pricing page at the clean URL (and keep .html working)
+/pricing      /pricing.html      200
+/pricing/     /pricing.html      200
