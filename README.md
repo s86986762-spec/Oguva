@@ -19,12 +19,13 @@ Static website for **oguva.com**, deployed on Cloudflare Pages (auto-deploys fro
 - `functions/api/pay.js`  - Razorpay checkout (`POST /api/pay`)
 
 ### Secrets / bindings (Cloudflare > project > Settings)
-- `ANTHROPIC_API_KEY`   (secret) - the AI chat
-- `GOOGLE_MAPS_API_KEY` (secret) - the Maps lookup tool
-- `LEAD_WEBHOOK_URL`    (secret) - forwards leads to Zoho Flow (automation)
-- `RAZORPAY_KEY_ID`     (secret) - Razorpay key id
-- `RAZORPAY_KEY_SECRET` (secret) - Razorpay key secret
-- `RATE_KV`             (KV binding) - rate limiting + saved leads
+All must be type **Secret**, with a value, for the **Production** environment:
+- `ANTHROPIC_API_KEY`    - the AI chat
+- `GOOGLE_MAPS_API_KEY`  - the Maps lookup tool
+- `LEAD_WEBHOOK_URL`     - forwards leads to Zoho Flow (automation)
+- `RAZORPAY_KEY_ID`      - Razorpay key id (rzp_test_... or rzp_live_...)
+- `RAZORPAY_KEY_SECRET`  - Razorpay key secret
+- `RATE_KV` (KV binding) - rate limiting + saved leads
 
 ## Cloudflare Pages settings
 - Build command: (none) · Build output directory: `/`
